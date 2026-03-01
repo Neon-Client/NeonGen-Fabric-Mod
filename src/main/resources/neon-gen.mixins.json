@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "com.neonclient.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "network.ClientLoginNetworkHandlerMixin",
+    "screen.TitleScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

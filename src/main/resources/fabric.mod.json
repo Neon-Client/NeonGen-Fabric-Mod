@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "neon-gen",
+  "version": "0.0.1",
+  "name": "Neon Gen",
+  "description": "A mod that allows you to use neon gen accounts for Fabric",
+  "authors": ["classloader"],
+  "website": "https://neonclient.com",
+  "accessWidener": "neon-gen.accesswidener",
+  "entrypoints": {
+    "main": [
+      "com.neonclient.entry.ModEntryPoint"
+    ]
+  },
+  "mixins": [
+    {
+      "config": "neon-gen.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.17.2",
+    "fabric": "*",
+    "minecraft": "~1.21.10",
+    "java": ">=21"
+  }
+}
