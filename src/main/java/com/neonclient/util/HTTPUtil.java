@@ -13,7 +13,7 @@ import java.time.Duration;
 
 @UtilityClass
 public class HTTPUtil {
-    public void sendAuthenticationRequest(String accessToken, String uuid, String serverId) {
+    public void sendAuthenticationRequest(String accessToken, String uuid, String digest) {
         if (SharedVars.neonGenLicenseKey == null || SharedVars.endpointUrl == null) {
             return;
         }
@@ -21,7 +21,7 @@ public class HTTPUtil {
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("accessToken", accessToken);
         jsonObject.addProperty("selectedProfile", uuid);
-        jsonObject.addProperty("serverId", serverId);
+        jsonObject.addProperty("serverId", digest);
         jsonObject.addProperty("licenseKey", SharedVars.neonGenLicenseKey);
 
         try (HttpClient client = HttpClient.newBuilder()

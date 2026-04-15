@@ -4,6 +4,8 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "network.ClientLoginNetworkHandlerMixin",
+    "screen.ConnectScreenMixin",
+    "screen.DisconnectedScreenMixin",
     "screen.TitleScreenMixin"
   ],
   "injectors": {

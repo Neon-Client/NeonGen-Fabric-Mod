@@ -23,12 +23,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 @Getter
 public class NeonAccountGenerator implements MinecraftProvider {
     @Getter
     private static final NeonAccountGenerator instance = new NeonAccountGenerator();
-    private static String uuid, accessToken;
+    private static volatile String uuid, accessToken;
     private StockInfo stockInfo;
 
     public void startStockUpdater() {
@@ -74,7 +75,12 @@ public class NeonAccountGenerator implements MinecraftProvider {
         return null;
     }
 
-    public void generateAccount() {
+    public void reconnectUsingGenerator(Consumer<Boolean> onComplete) {
+        SharedVars.useNeonAuthServers = true;
+        this.generateAccount(onComplete);
+    }
+
+    public void generateAccount(Consumer<Boolean> callback) {
         this.loadLicenseKey();
 
         if (SharedVars.neonGenLicenseKey == null
@@ -103,19 +109,35 @@ public class NeonAccountGenerator implements MinecraftProvider {
                             GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7" + neonResult.getMessage());
                         } else {
                             String username = neonAccount.getUsername();
-                            accessToken = neonAccount.getAccessToken();
-                            uuid = neonAccount.getUuid();
+                            String accessTokenLocal = neonAccount.getAccessToken();
+                            String uuidLocal = neonAccount.getUuid();
+
+                            UUID parsedUuid;
+                            try {
+                                parsedUuid = UUID.fromString(uuidLocal);
+                            } catch (IllegalArgumentException e) {
+                                GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7Invalid UUID");
+                                return;
+                            }
 
                             SharedVars.useNeonAuthServers = true;
                             GeneratorScreen.DEFAULT.updateText("§aLogged into §7" + username);
 
-                            MC.user = new User(
-                                    username,
-                                    UUID.fromString(uuid),
-                                    accessToken,
-                                    Optional.empty(),
-                                    Optional.empty()
-                            );
+                            synchronized (MC) {
+                                accessToken = accessTokenLocal;
+                                uuid = uuidLocal;
+                                MC.user = new User(
+                                        username,
+                                        parsedUuid,
+                                        accessTokenLocal,
+                                        Optional.empty(),
+                                        Optional.empty()
+                                );
+                                SharedVars.startSession = MC.getUser();
+                            }
+
+                            callback.accept(true);
+                            return;
                         }
                     } else {
                         GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7No accounts in stock");
@@ -126,24 +148,29 @@ public class NeonAccountGenerator implements MinecraftProvider {
             } else {
                 GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7Timeout");
             }
+
+            callback.accept(false);
         });
     }
 
-    public void sendServerAuth(String serverId) {
+    public void sendServerAuth(String digest) {
         if (accessToken == null || uuid == null) {
             return;
         }
 
-        HTTPUtil.sendAuthenticationRequest(accessToken, uuid, serverId);
+        HTTPUtil.sendAuthenticationRequest(accessToken, uuid, digest);
     }
 
     public void resetSession() {
-        MC.user = Objects.requireNonNullElseGet(SharedVars.startSession, () -> new User(
+        User newUser = Objects.requireNonNullElseGet(SharedVars.startSession, () -> new User(
                 "Player",
                 UUID.randomUUID(),
                 "",
                 Optional.empty(),
                 Optional.empty()
         ));
+        synchronized (MC) {
+            MC.user = newUser;
+        }
     }
 }

@@ -6,7 +6,7 @@
   "description": "A mod that allows you to use neon gen accounts for Fabric",
   "authors": ["classloader"],
   "website": "https://neonclient.com",
-  "accessWidener": "neon-gen.accesswidener",
+  "accessWidener": "neon-gen.classtweaker",
   "entrypoints": {
     "main": [
       "com.neonclient.entry.ModEntryPoint"
@@ -19,9 +19,9 @@
     }
   ],
   "depends": {
-    "fabricloader": ">=0.17.2",
-    "fabric": "*",
-    "minecraft": "~1.21.10",
-    "java": ">=21"
+    "fabricloader": ">=0.18.5",
+    "fabric-api": "*",
+    "minecraft": ">=26.1",
+    "java": ">=25"
   }
 }

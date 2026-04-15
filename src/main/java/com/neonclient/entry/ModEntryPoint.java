@@ -9,7 +9,7 @@ public class ModEntryPoint implements ModInitializer, MinecraftProvider {
 
     @Override
     public void onInitialize() {
-        SharedVars.startSession = MC.user;
+        SharedVars.startSession = MC.getUser();
         NeonAccountGenerator.getInstance().loadLicenseKey();
         NeonAccountGenerator.getInstance().startStockUpdater();
     }

@@ -5,7 +5,7 @@ import com.neonclient.generator.NeonAccountGenerator;
 import com.neonclient.generator.object.StockInfo;
 import com.neonclient.util.StringUtil;
 import lombok.Getter;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.screens.Screen;
@@ -27,13 +27,13 @@ public class GeneratorScreen extends Screen {
     @Override
     protected void init() {
         this.generateButton = Button
-                .builder(Component.literal("Generate Account"), button ->
-                        NeonAccountGenerator.getInstance().generateAccount())
+                .builder(Component.literal("Generate Account"), _ ->
+                        NeonAccountGenerator.getInstance().generateAccount(null))
                 .bounds(0, 0, 150, 20)
                 .build();
 
         this.resetButton = Button
-                .builder(Component.literal("Reset"), button -> {
+                .builder(Component.literal("Reset"), _ -> {
                     SharedVars.useNeonAuthServers = false;
                     this.updateText("§aSwapped back to Microsoft auth servers");
                     NeonAccountGenerator.getInstance().resetSession();
@@ -42,7 +42,8 @@ public class GeneratorScreen extends Screen {
                 .build();
 
         boolean hasKey = SharedVars.neonGenLicenseKey != null && SharedVars.endpointUrl != null;
-        this.stockText = this.addRenderableWidget(new StringWidget(Component.literal(""), this.minecraft.font));
+        this.stockText = this.addRenderableWidget(new StringWidget(Component.literal(""),
+                this.minecraft.font));
         this.status = this.addRenderableWidget(new StringWidget(
                 Component.literal(hasKey ? "§aWaiting..." : "§c§lNo License Key"),
                 this.minecraft.font));
@@ -63,8 +64,9 @@ public class GeneratorScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderPanorama(guiGraphics, partialTick);
+    public void extractBackground(@NotNull GuiGraphicsExtractor guiGraphics,
+                                  int mouseX, int mouseY, float partialTick) {
+        this.extractPanorama(guiGraphics, partialTick);
 
         this.generateButton.setPosition(width / 2 - this.generateButton.getWidth() / 2,
                 (height / 2 - this.generateButton.getHeight() / 2) - 30);
@@ -105,10 +107,12 @@ public class GeneratorScreen extends Screen {
 
     public void updateText(String text) {
         SharedVars.lastStatusMessage = text;
-        this.status.setMessage(Component.literal(text));
+        if (this.status != null) {
+            this.status.setMessage(Component.literal(text));
 
-        int width = this.minecraft.font.width(this.status.getMessage());
-        this.status.setWidth(width);
-        this.status.setMaxWidth(Integer.MAX_VALUE);
+            int width = this.minecraft.font.width(this.status.getMessage());
+            this.status.setWidth(width);
+            this.status.setMaxWidth(Integer.MAX_VALUE);
+        }
     }
 }
