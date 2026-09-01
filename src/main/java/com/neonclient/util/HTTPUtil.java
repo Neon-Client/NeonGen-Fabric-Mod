@@ -50,7 +50,8 @@ public class HTTPUtil {
                     .uri(URI.create(SharedVars.endpointUrl + callPoint))
                     .header("User-Agent", "Neon Gen/1.0")
                     .header("license", SharedVars.neonGenLicenseKey)
-                    .timeout(Duration.ofSeconds(5))
+                    .header("unban-type", SharedVars.unbanType)
+                    .timeout(Duration.ofSeconds(SharedVars.unbanType.equalsIgnoreCase("None") ? 5 : 125))
                     .GET()
                     .build();
 

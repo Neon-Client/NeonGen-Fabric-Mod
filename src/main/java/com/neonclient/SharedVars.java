@@ -4,6 +4,9 @@ import net.minecraft.client.User;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SharedVars {
     public static String lastStatusMessage;
     public static boolean firstInit;
@@ -14,4 +17,6 @@ public class SharedVars {
     public static User startSession;
     public static ServerAddress lastKnownServerAddress;
     public static ServerData lastKnownServerData;
+    public static final List<String> unbanTypes = new ArrayList<>();
+    public static String unbanType = "None";
 }

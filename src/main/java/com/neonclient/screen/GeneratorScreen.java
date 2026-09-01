@@ -20,6 +20,7 @@ public class GeneratorScreen extends Screen {
 
     public static final GeneratorScreen DEFAULT = new GeneratorScreen();
     private Button generateButton;
+    private Button unbanType;
     private Button resetButton;
     private StringWidget status;
     private StringWidget stockText;
@@ -32,10 +33,24 @@ public class GeneratorScreen extends Screen {
                 .bounds(0, 0, 150, 20)
                 .build();
 
+        this.unbanType = Button
+                .builder(Component.literal("Unban Type: " + SharedVars.unbanType), button -> {
+                    if (SharedVars.unbanTypes.isEmpty()) {
+                        return;
+                    }
+
+                    int currentIndex = SharedVars.unbanTypes.indexOf(SharedVars.unbanType);
+                    int nextIndex = (currentIndex + 1) % SharedVars.unbanTypes.size();
+                    SharedVars.unbanType = SharedVars.unbanTypes.get(nextIndex);
+                    button.setMessage(Component.literal("Unban Type: " + SharedVars.unbanType));
+                })
+                .bounds(0, 0, 150, 20)
+                .build();
+
         this.resetButton = Button
                 .builder(Component.literal("Reset"), _ -> {
                     SharedVars.useNeonAuthServers = false;
-                    this.updateText("§aSwapped back to Microsoft auth servers");
+                    this.updateText("§aSwitched back to Mojang auth servers");
                     NeonAccountGenerator.getInstance().resetSession();
                 })
                 .bounds(0, 0, 150, 20)
@@ -48,7 +63,9 @@ public class GeneratorScreen extends Screen {
                 Component.literal(hasKey ? "§aWaiting..." : "§c§lNo License Key"),
                 this.minecraft.font));
         this.addRenderableWidget(this.generateButton);
+        this.addRenderableWidget(this.unbanType);
         this.addRenderableWidget(this.resetButton);
+        this.setButtonsActive(!NeonAccountGenerator.getInstance().isGenerating());
 
         if (!SharedVars.firstInit) {
             SharedVars.firstInit = true;
@@ -70,14 +87,17 @@ public class GeneratorScreen extends Screen {
 
         this.generateButton.setPosition(width / 2 - this.generateButton.getWidth() / 2,
                 (height / 2 - this.generateButton.getHeight() / 2) - 30);
-        this.resetButton.setPosition(width / 2 - this.resetButton.getWidth() / 2,
+        this.unbanType.setPosition(width / 2 - this.unbanType.getWidth() / 2,
                 (height / 2 - this.resetButton.getHeight() / 2) - 5);
+        this.resetButton.setPosition(width / 2 - this.resetButton.getWidth() / 2,
+                (height / 2 - this.resetButton.getHeight() / 2) + 20);
         this.status.setPosition(
                 width / 2 - (this.minecraft.font.width(this.status.getMessage()) / 2),
                 (height / 2 - this.status.getHeight() / 2) - 50);
 
-        this.generateButton.active = SharedVars.lastAccountGenerate == -1L
-                || (System.currentTimeMillis() - SharedVars.lastAccountGenerate) >= 3000L;
+        this.generateButton.active = !NeonAccountGenerator.getInstance().isGenerating()
+                && (SharedVars.lastAccountGenerate == -1L
+                || (System.currentTimeMillis() - SharedVars.lastAccountGenerate) >= 3000L);
 
         StockInfo stockInfo = NeonAccountGenerator.getInstance().getStockInfo();
 
@@ -113,6 +133,18 @@ public class GeneratorScreen extends Screen {
             int width = this.minecraft.font.width(this.status.getMessage());
             this.status.setWidth(width);
             this.status.setMaxWidth(Integer.MAX_VALUE);
+        }
+    }
+
+    public void setButtonsActive(boolean active) {
+        if (this.generateButton != null) {
+            this.generateButton.active = active;
+        }
+        if (this.unbanType != null) {
+            this.unbanType.active = active;
+        }
+        if (this.resetButton != null) {
+            this.resetButton.active = active;
         }
     }
 }

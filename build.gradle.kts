@@ -1,15 +1,14 @@
 plugins {
-    id("net.fabricmc.fabric-loom") version "1.15-SNAPSHOT"
+    id("net.fabricmc.fabric-loom") version "1.17.20"
     id("java")
-    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
-val minecraftVersion = "26.1.1"
-val loaderVersion = "0.18.5"
-val fabricVersion = "0.145.3+26.1.1"
+val minecraftVersion = "26.2"
+val loaderVersion = "0.19.5"
+val fabricVersion = "0.159.0+26.2"
 
 group = "me.rhys"
-version = "1.2"
+version = "1.3"
 
 repositories {
     mavenCentral()

@@ -30,6 +30,7 @@ public class NeonAccountGenerator implements MinecraftProvider {
     @Getter
     private static final NeonAccountGenerator instance = new NeonAccountGenerator();
     private static volatile String uuid, accessToken;
+    private volatile boolean generating;
     private StockInfo stockInfo;
 
     public void startStockUpdater() {
@@ -69,7 +70,16 @@ public class NeonAccountGenerator implements MinecraftProvider {
         String response = HTTPUtil.getResponse("stock");
 
         if (response != null) {
-            return GsonUtil.GSON.fromJson(response, StockInfo.class);
+            StockInfo stockInfo = GsonUtil.GSON.fromJson(response, StockInfo.class);
+
+            if (stockInfo != null) {
+                if (SharedVars.unbanTypes.isEmpty()) {
+                    SharedVars.unbanTypes.add("None");
+                    SharedVars.unbanTypes.addAll(stockInfo.getUnbanTypes());
+                }
+
+                return stockInfo;
+            }
         }
 
         return null;
@@ -83,6 +93,10 @@ public class NeonAccountGenerator implements MinecraftProvider {
     public void generateAccount(Consumer<Boolean> callback) {
         this.loadLicenseKey();
 
+        if (this.generating) {
+            return;
+        }
+
         if (SharedVars.neonGenLicenseKey == null
                 || SharedVars.endpointUrl == null
                 || SharedVars.neonGenLicenseKey.length() <= 10) {
@@ -92,64 +106,85 @@ public class NeonAccountGenerator implements MinecraftProvider {
 
         SharedVars.lastAccountGenerate = System.currentTimeMillis();
         GeneratorScreen.DEFAULT.updateText("§8Getting Account...");
+        this.generating = true;
+        GeneratorScreen.DEFAULT.setButtonsActive(false);
 
         ThreadUtil.execute(() -> {
-            String response = HTTPUtil.getResponse("generate");
+            try {
+                String response = HTTPUtil.getResponse("generate");
 
-            if (response != null) {
-                NeonResult neonResult = GsonUtil.GSON.fromJson(response, NeonResult.class);
+                if (response != null) {
+                    JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
+                    if (jsonObject.has("message")) {
+                        String message = jsonObject.get("message").getAsString();
 
-                if (neonResult != null) {
-                    NeonAccount neonAccount = neonResult.getNeonAccount();
+                        if (message.contains("Rate limit exceeded")) {
+                            GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7" + message);
+                            return;
+                        }
+                    }
 
-                    if (neonAccount != null) {
-                        boolean hasError = !neonResult.getMessage().isEmpty();
+                    NeonResult neonResult = GsonUtil.GSON.fromJson(response, NeonResult.class);
 
-                        if (hasError) {
-                            GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7" + neonResult.getMessage());
-                        } else {
-                            String username = neonAccount.getUsername();
-                            String accessTokenLocal = neonAccount.getAccessToken();
-                            String uuidLocal = neonAccount.getUuid();
+                    if (neonResult != null) {
+                        NeonAccount neonAccount = neonResult.getNeonAccount();
 
-                            UUID parsedUuid;
-                            try {
-                                parsedUuid = UUID.fromString(uuidLocal);
-                            } catch (IllegalArgumentException e) {
-                                GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7Invalid UUID");
+                        if (neonAccount != null) {
+                            boolean hasError = !neonResult.getMessage().isEmpty();
+
+                            if (hasError) {
+                                GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7" + neonResult.getMessage());
+                            } else {
+                                String username = neonAccount.getUsername();
+                                String accessTokenLocal = neonAccount.getAccessToken();
+                                String uuidLocal = neonAccount.getUuid();
+
+                                UUID parsedUuid;
+                                try {
+                                    parsedUuid = UUID.fromString(uuidLocal);
+                                } catch (IllegalArgumentException e) {
+                                    GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7Invalid UUID");
+                                    return;
+                                }
+
+                                SharedVars.useNeonAuthServers = true;
+                                GeneratorScreen.DEFAULT.updateText("§aLogged into §7" + username);
+
+                                synchronized (MC) {
+                                    accessToken = accessTokenLocal;
+                                    uuid = uuidLocal;
+                                    MC.user = new User(
+                                            username,
+                                            parsedUuid,
+                                            accessTokenLocal,
+                                            Optional.empty(),
+                                            Optional.empty()
+                                    );
+                                    SharedVars.startSession = MC.getUser();
+                                }
+
+                                if (callback != null) {
+                                    callback.accept(true);
+                                }
                                 return;
                             }
-
-                            SharedVars.useNeonAuthServers = true;
-                            GeneratorScreen.DEFAULT.updateText("§aLogged into §7" + username);
-
-                            synchronized (MC) {
-                                accessToken = accessTokenLocal;
-                                uuid = uuidLocal;
-                                MC.user = new User(
-                                        username,
-                                        parsedUuid,
-                                        accessTokenLocal,
-                                        Optional.empty(),
-                                        Optional.empty()
-                                );
-                                SharedVars.startSession = MC.getUser();
-                            }
-
-                            callback.accept(true);
-                            return;
+                        } else {
+                            GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7No accounts in stock");
                         }
                     } else {
                         GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7No accounts in stock");
                     }
                 } else {
-                    GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7No accounts in stock");
+                    GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7Timeout");
                 }
-            } else {
-                GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7Timeout");
-            }
 
-            callback.accept(false);
+                if (callback != null) {
+                    callback.accept(false);
+                }
+            } finally {
+                this.generating = false;
+                MC.execute(() -> GeneratorScreen.DEFAULT.setButtonsActive(true));
+            }
         });
     }
 
