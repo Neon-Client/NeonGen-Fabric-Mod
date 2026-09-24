@@ -4,11 +4,13 @@ import com.neonclient.SharedVars;
 import com.neonclient.generator.NeonAccountGenerator;
 import com.neonclient.generator.object.StockInfo;
 import com.neonclient.util.StringUtil;
+import com.mojang.blaze3d.platform.InputConstants;
 import lombok.Getter;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
@@ -34,16 +36,8 @@ public class GeneratorScreen extends Screen {
                 .build();
 
         this.unbanType = Button
-                .builder(Component.literal("Unban Type: " + SharedVars.unbanType), button -> {
-                    if (SharedVars.unbanTypes.isEmpty()) {
-                        return;
-                    }
-
-                    int currentIndex = SharedVars.unbanTypes.indexOf(SharedVars.unbanType);
-                    int nextIndex = (currentIndex + 1) % SharedVars.unbanTypes.size();
-                    SharedVars.unbanType = SharedVars.unbanTypes.get(nextIndex);
-                    button.setMessage(Component.literal("Unban Type: " + SharedVars.unbanType));
-                })
+                .builder(Component.literal("Unban Type: " + SharedVars.unbanType), button ->
+                        this.changeUnbanType(1))
                 .bounds(0, 0, 150, 20)
                 .build();
 
@@ -78,6 +72,32 @@ public class GeneratorScreen extends Screen {
     @Override
     public void onClose() {
         super.onClose();
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT
+                && this.unbanType != null
+                && this.unbanType.visible
+                && this.unbanType.isMouseOver(event.x(), event.y())) {
+            this.unbanType.playDownSound(this.minecraft.getSoundManager());
+            this.changeUnbanType(-1);
+            return true;
+        }
+
+        return super.mouseClicked(event, doubleClick);
+    }
+
+    private void changeUnbanType(int direction) {
+        if (SharedVars.unbanTypes.isEmpty()) {
+            return;
+        }
+
+        int currentIndex = Math.max(0, SharedVars.unbanTypes.indexOf(SharedVars.unbanType));
+        int nextIndex = Math.floorMod(currentIndex + direction,
+                SharedVars.unbanTypes.size());
+        SharedVars.unbanType = SharedVars.unbanTypes.get(nextIndex);
+        this.unbanType.setMessage(Component.literal("Unban Type: " + SharedVars.unbanType));
     }
 
     @Override

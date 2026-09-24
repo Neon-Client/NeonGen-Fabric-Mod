@@ -115,10 +115,11 @@ public class NeonAccountGenerator implements MinecraftProvider {
 
                 if (response != null) {
                     JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
+
                     if (jsonObject.has("message")) {
                         String message = jsonObject.get("message").getAsString();
 
-                        if (message.contains("Rate limit exceeded")) {
+                        if (!message.isEmpty()) {
                             GeneratorScreen.DEFAULT.updateText("§c§lERROR: §7" + message);
                             return;
                         }
