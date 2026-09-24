@@ -8,7 +8,7 @@ val loaderVersion = "0.19.5"
 val fabricVersion = "0.161.0+26.3"
 
 group = "me.rhys"
-version = "1.3"
+version = "1.4"
 
 repositories {
     mavenCentral()
